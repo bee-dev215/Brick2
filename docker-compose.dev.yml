@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:password@64.227.99.111:5432/brick_orchestration
+      - DATABASE_URL_SYNC=postgresql://user:password@64.227.99.111:5432/brick_orchestration
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=dev-secret-key
+      - DEBUG=True
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - brick2-dev-network
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=brick2_dev
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+    networks:
+      - brick2-dev-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_dev_data:/data
+    restart: unless-stopped
+    networks:
+      - brick2-dev-network
+
+  test-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=brick2_test
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5434:5432"
+    restart: unless-stopped
+    networks:
+      - brick2-dev-network
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+
+networks:
+  brick2-dev-network:
+    driver: bridge
